@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchard Snake: Battle</title>
+<style>
+  :root {
+    --bg-deep: #0e1f1a;
+    --bg-mid: #142f27;
+    --panel: #10241d;
+    --border: #2a4a3e;
+    --text-main: #eaf5ee;
+    --text-dim: #7fa393;
+    --accent: #e8c15a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(ellipse at top, var(--bg-mid), var(--bg-deep) 70%);
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    width: 100%;
+    max-width: 560px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin: 0 0 4px;
+    color: var(--accent);
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    letter-spacing: 0.5px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 480px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    margin-bottom: 10px;
+    padding: 0 4px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hud-item { display: flex; flex-direction: column; align-items: flex-start; }
+  .hud-item.right { align-items: flex-end; }
+  .hud-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .hud-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .roster {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 3px 9px 3px 6px;
+  }
+  .chip.dead { opacity: 0.35; text-decoration: line-through; }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .board-frame {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    box-shadow: 0 0 0 6px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.4);
+    padding: 8px;
+  }
+  canvas {
+    display: block;
+    border-radius: 2px;
+    touch-action: none;
+  }
+  .overlay {
+    position: absolute;
+    inset: 8px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 20, 16, 0.9);
+    border-radius: 2px;
+    text-align: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 {
+    font-weight: 400;
+    font-size: 24px;
+    margin: 0 0 6px;
+    color: var(--accent);
+  }
+  .overlay p {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0 0 16px;
+  }
+  button.action {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: var(--accent);
+    color: #23300a;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+  }
+  button.action:active { transform: scale(0.97); }
+  .swatch-label, .count-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .swatches {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+  }
+  .swatch.selected {
+    border-color: var(--text-main);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.3);
+  }
+  .count-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .count-btn {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .count-btn.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .results-list {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: left;
+    width: 100%;
+    max-width: 260px;
+  }
+  .results-list div {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-list .rdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .controls-hint {
+    margin-top: 14px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .dpad {
+    display: none;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .dpad button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    border-radius: 10px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dpad button:active { background: var(--border); }
+  #up { grid-column: 2; grid-row: 1; }
+  #left { grid-column: 1; grid-row: 2; }
+  #down { grid-column: 2; grid-row: 2; }
+  #right { grid-column: 3; grid-row: 2; }
+  @media (max-width: 520px) {
+    .dpad { display: grid; }
+  }
+  .countdown-overlay {
+    position: absolute;
+    inset: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 20, 16, 0.55);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .countdown-overlay.show { display: flex; }
+  .countdown-num {
+    font-family: 'Georgia', serif;
+    font-size: 96px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(232,193,90,0.6);
+    animation: pop 0.9s ease-out;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    30% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.85; }
+  }
+  .pause-badge {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    background: rgba(10, 20, 16, 0.92);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 14px;
+  }
+  .pause-badge.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Orchard Snake: Battle</h1>
+  <div class="subtitle">Eat fruit, outlast the others</div>
+
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-label">Your length</span>
+      <span class="hud-value" id="score">3</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Time left</span>
+      <span class="hud-value" id="timeLeft">5:00</span>
+    </div>
+    <div class="roster" id="roster"></div>
+  </div>
+
+  <div class="board-frame">
+    <canvas id="board" width="440" height="440"></canvas>
+    <div class="overlay" id="startOverlay">
+      <h2>Orchard Snake: Battle</h2>
+      <p>Arrow keys or swipe to move.<br>When a snake dies, its body turns to fruit.<br>Last one slithering wins.</p>
+      <div class="swatch-label">Choose your snake</div>
+      <div class="swatches" id="swatches"></div>
+      <div class="count-label">Opponents</div>
+      <div class="count-row" id="countRow"></div>
+      <button class="action" id="startBtn">Start</button>
+    </div>
+    <div class="overlay" id="gameOverOverlay">
+      <h2 id="goTitle">Withered</h2>
+      <p id="goDetail">Final length: 0</p>
+      <div class="results-list" id="resultsList"></div>
+      <button class="action" id="retryBtn">Battle again</button>
+    </div>
+    <div class="countdown-overlay" id="countdownOverlay">
+      <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+    <div class="pause-badge" id="pauseBadge">Paused &middot; Space to resume</div>
+  </div>
+
+  <div class="controls-hint">Arrows / WASD to steer &middot; Space to pause</div>
+
+  <div class="dpad">
+    <button id="up">&#9650;</button>
+    <button id="left">&#9664;</button>
+    <button id="down">&#9660;</button>
+    <button id="right">&#9654;</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const cell = 20;
+  const cols = canvas.width / cell;
+  const rows = canvas.height / cell;
+
+  const scoreEl = document.getElementById('score');
+  const timeLeftEl = document.getElementById('timeLeft');
+  const rosterEl = document.getElementById('roster');
+  const startOverlay = document.getElementById('startOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const goTitle = document.getElementById('goTitle');
+  const goDetail = document.getElementById('goDetail');
+  const resultsList = document.getElementById('resultsList');
+  const countdownOverlay = document.getElementById('countdownOverlay');
+  const countdownNum = document.getElementById('countdownNum');
+  const pauseBadge = document.getElementById('pauseBadge');
+
+  const PALETTES = [
+    { name: 'moss',   head: '#6fe3a4', body: '#3aa876', eye: '#0e1f1a' },
+    { name: 'sky',    head: '#6fb8e3', body: '#3a7ea8', eye: '#0e1a1f' },
+    { name: 'plum',   head: '#b98fe0', body: '#7a54a8', eye: '#1a0e1f' },
+    { name: 'ember',  head: '#e39a6f', body: '#a8623a', eye: '#1f130e' },
+    { name: 'rose',   head: '#e36f9a', body: '#a83a62', eye: '#1f0e15' },
+    { name: 'lemon',  head: '#e0d06f', body: '#a89a3a', eye: '#1f1c0e' }
+  ];
+  let selectedPaletteIdx = 0;
+  let opponentCount = 2;
+
+  const swatchWrap = document.getElementById('swatches');
+  PALETTES.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i === 0 ? ' selected' : '');
+    b.style.background = `linear-gradient(135deg, ${p.head}, ${p.body})`;
+    b.title = p.name;
+    b.addEventListener('click', () => {
+      selectedPaletteIdx = i;
+      swatchWrap.querySelectorAll('.swatch').forEach(el => el.classList.remove('selected'));
+      b.classList.add('selected');
+    });
+    swatchWrap.appendChild(b);
+  });
+
+  const countRow = document.getElementById('countRow');
+  [1, 2].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (n === opponentCount ? ' selected' : '');
+    b.textContent = n;
+    b.addEventListener('click', () => {
+      opponentCount = n;
+      countRow.querySelectorAll('.count-btn').forEach(el => el.classList.remove('selected'));
+      b.classList.add('selected');
+    });
+    countRow.appendChild(b);
+  });
+
+  const FRUITS = [
+    { name: 'berry',   color: '#e0507a', glow: 'rgba(224,80,122,0.55)', points: 1 },
+    { name: 'grape',   color: '#9a6fe0', glow: 'rgba(154,111,224,0.55)', points: 1 },
+    { name: 'apple',   color: '#e0693f', glow: 'rgba(224,105,63,0.55)', points: 2 },
+    { name: 'citrus',  color: '#e8b23a', glow: 'rgba(232,178,58,0.55)', points: 3 }
+  ];
+
+  function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const num = parseInt(hex, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+  function rgbStr(c, a) {
+    return a === undefined ? `rgb(${c.r},${c.g},${c.b})` : `rgba(${c.r},${c.g},${c.b},${a})`;
+  }
+  function mixRgb(c1, c2, t) {
+    return {
+      r: Math.round(c1.r + (c2.r - c1.r) * t),
+      g: Math.round(c1.g + (c2.g - c1.g) * t),
+      b: Math.round(c1.b + (c2.b - c1.b) * t)
+    };
+  }
+  function shadeRgb(c, percent) {
+    const mix = (v) => percent < 0 ? Math.round(v * (1 + percent)) : Math.round(v + (255 - v) * percent);
+    return { r: mix(c.r), g: mix(c.g), b: mix(c.b) };
+  }
+
+  const ambientGlows = [
+    { x: 95,  y: 85,  r: 170, color: 'rgba(120,205,150,0.05)' },
+    { x: 355, y: 365, r: 190, color: 'rgba(224,193,90,0.045)' },
+    { x: 320, y: 95,  r: 150, color: 'rgba(120,175,225,0.04)' },
+    { x: 80,  y: 350, r: 150, color: 'rgba(190,130,225,0.035)' }
+  ];
+
+  let snakes = [];
+  let fruits = [];
+  let running = false;
+  let paused = false;
+  let timer = null;
+  let speed = 130;
+  const baseSpeed = 130;
+  let tickCount = 0;
+  const MATCH_DURATION_MS = 5 * 60 * 1000;
+  let matchEndAt = 0;
+  let matchClock = null;
+  let pausedAt = 0;
+
+  const START_SPOTS = [
+    { x: 3,  y: 3,  dir: { x: 1, y: 0 } },
+    { x: 18, y: 18, dir: { x: -1, y: 0 } },
+    { x: 18, y: 3,  dir: { x: 0, y: 1 } },
+    { x: 3,  y: 18, dir: { x: 0, y: -1 } },
+    { x: 10, y: 3,  dir: { x: 0, y: 1 } },
+    { x: 10, y: 18, dir: { x: 0, y: -1 } }
+  ];
+
+  function occupiedCells() {
+    const set = new Set();
+    snakes.forEach(s => { if (s.alive) s.body.forEach(seg => set.add(seg.x + ',' + seg.y)); });
+    fruits.forEach(f => set.add(f.x + ',' + f.y));
+    return set;
+  }
+
+  function randomEmptyCell() {
+    const occ = occupiedCells();
+    let attempts = 0, pos;
+    do {
+      pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+      attempts++;
+    } while (occ.has(pos.x + ',' + pos.y) && attempts < 300);
+    return pos;
+  }
+
+  function spawnFruit(count) {
+    for (let i = 0; i < count; i++) {
+      const pos = randomEmptyCell();
+      const kind = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+      fruits.push({ ...pos, ...kind, id: Math.random() });
+    }
+  }
+
+  function scatterFruitFromBody(body) {
+    body.forEach((seg, i) => {
+      if (i % 2 === 0) {
+        const kind = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+        fruits.push({ x: seg.x, y: seg.y, ...kind, id: Math.random() });
+      }
+    });
+  }
+
+  function buildRoster() {
+    rosterEl.innerHTML = '';
+    snakes.forEach(s => {
+      const chip = document.createElement('div');
+      chip.className = 'chip' + (s.alive ? '' : ' dead');
+      chip.id = 'chip-' + s.id;
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = s.palette.head;
+      chip.appendChild(dot);
+      const label = document.createElement('span');
+      label.textContent = s.isPlayer ? 'You' : s.label;
+      chip.appendChild(label);
+      const len = document.createElement('span');
+      len.id = 'chiplen-' + s.id;
+      len.style.marginLeft = '4px';
+      len.style.color = 'var(--text-main)';
+      len.textContent = s.body.length;
+      chip.appendChild(len);
+      rosterEl.appendChild(chip);
+    });
+  }
+
+  function updateRoster() {
+    snakes.forEach(s => {
+      const chip = document.getElementById('chip-' + s.id);
+      if (chip) chip.className = 'chip' + (s.alive ? '' : ' dead');
+      const len = document.getElementById('chiplen-' + s.id);
+      if (len) len.textContent = s.body.length;
+    });
+  }
+
+  function resetState() {
+    snakes = [];
+    fruits = [];
+    tickCount = 0;
+    speed = baseSpeed;
+    paused = false;
+
+    const usedPalettes = [selectedPaletteIdx];
+    const spot0 = START_SPOTS[0];
+    snakes.push({
+      id: 0,
+      isPlayer: true,
+      label: 'You',
+      palette: PALETTES[selectedPaletteIdx],
+      body: [
+        { x: spot0.x, y: spot0.y },
+        { x: spot0.x - spot0.dir.x, y: spot0.y - spot0.dir.y },
+        { x: spot0.x - spot0.dir.x * 2, y: spot0.y - spot0.dir.y * 2 }
+      ],
+      dir: { ...spot0.dir },
+      nextDir: { ...spot0.dir },
+      alive: true,
+      ai: false
+    });
+
+    const names = ['Viper', 'Fang', 'Coil', 'Slither', 'Adder'];
+    for (let i = 0; i < opponentCount; i++) {
+      let palIdx;
+      do { palIdx = Math.floor(Math.random() * PALETTES.length); } while (usedPalettes.includes(palIdx) && usedPalettes.length < PALETTES.length);
+      usedPalettes.push(palIdx);
+      const spot = START_SPOTS[i + 1];
+      snakes.push({
+        id: i + 1,
+        isPlayer: false,
+        label: names[i % names.length],
+        palette: PALETTES[palIdx],
+        body: [
+          { x: spot.x, y: spot.y },
+          { x: spot.x - spot.dir.x, y: spot.y - spot.dir.y },
+          { x: spot.x - spot.dir.x * 2, y: spot.y - spot.dir.y * 2 }
+        ],
+        dir: { ...spot.dir },
+        nextDir: { ...spot.dir },
+        alive: true,
+        ai: true
+      });
+    }
+
+    spawnFruit(4 + opponentCount);
+    scoreEl.textContent = snakes[0].body.length;
+    buildRoster();
+  }
+
+  function drawGrid() {
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const base = ctx.createRadialGradient(cx, cy, 30, cx, cy, canvas.width * 0.72);
+    base.addColorStop(0, '#153324');
+    base.addColorStop(1, '#0a1712');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ambientGlows.forEach(g => {
+      const rg = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
+      rg.addColorStop(0, g.color);
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(g.x - g.r, g.y - g.r, g.r * 2, g.r * 2);
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let i = 1; i < cols; i++) {
+      for (let j = 1; j < rows; j++) {
+        ctx.beginPath();
+        ctx.arc(i * cell, j * cell, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const vignette = ctx.createRadialGradient(cx, cy, canvas.width * 0.32, cx, cy, canvas.width * 0.74);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawSnake(s) {
+    if (!s.alive) return;
+    const len = s.body.length;
+    const w = cell - 6;
+    const r = w / 2;
+
+    const headRgb = hexToRgb(s.palette.head);
+    const bodyRgb = hexToRgb(s.palette.body);
+    const tailRgb = shadeRgb(bodyRgb, -0.4);
+
+    function capsuleColor(k) {
+      if (k === 0) return rgbStr(headRgb);
+      const t = len > 2 ? (k - 1) / (len - 2) : 0;
+      return rgbStr(mixRgb(bodyRgb, tailRgb, t));
+    }
+
+    function drawCapsule(cx1, cy1, cx2, cy2, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(cx1, cy1, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx2, cy2, r, 0, Math.PI * 2); ctx.fill();
+      if (cx1 === cx2) {
+        ctx.fillRect(cx1 - r, Math.min(cy1, cy2), r * 2, Math.abs(cy2 - cy1));
+      } else {
+        ctx.fillRect(Math.min(cx1, cx2), cy1 - r, Math.abs(cx2 - cx1), r * 2);
+      }
+    }
+
+    const head = s.body[0];
+    const hx = head.x * cell + cell / 2, hy = head.y * cell + cell / 2;
+
+    // soft glow behind the head
+    const halo = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 2.4);
+    halo.addColorStop(0, rgbStr(headRgb, 0.32));
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(hx, hy, r * 2.4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    if (len === 1) {
+      ctx.fillStyle = rgbStr(headRgb);
+      ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2); ctx.fill();
+    } else {
+      for (let k = len - 2; k >= 0; k--) {
+        const a = s.body[k], b = s.body[k + 1];
+        const cx1 = a.x * cell + cell / 2, cy1 = a.y * cell + cell / 2;
+        const cx2 = b.x * cell + cell / 2, cy2 = b.y * cell + cell / 2;
+        drawCapsule(cx1, cy1, cx2, cy2, capsuleColor(k));
+      }
+    }
+    ctx.restore();
+
+    // glossy shine along the body
+    for (let k = 0; k < len; k++) {
+      const seg = s.body[k];
+      const cx = seg.x * cell + cell / 2, cy = seg.y * cell + cell / 2;
+      const shine = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx - r * 0.3, cy - r * 0.3, r * 0.9);
+      shine.addColorStop(0, 'rgba(255,255,255,0.22)');
+      shine.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = shine;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // eyes
+    ctx.fillStyle = s.palette.eye;
+    const d = s.dir;
+    if (d.x !== 0) {
+      ctx.beginPath(); ctx.arc(hx + d.x * 2.5, hy - 4, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx + d.x * 2.5, hy + 4, 1.6, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(hx - 4, hy + d.y * 2.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx + 4, hy + d.y * 2.5, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawFruit(f) {
+    const px = f.x * cell + cell / 2, py = f.y * cell + cell / 2;
+    const r = cell / 2 - 2;
+    const grad = ctx.createRadialGradient(px, py, 1, px, py, r + 6);
+    grad.addColorStop(0, f.glow);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px - r - 6, py - r - 6, (r + 6) * 2, (r + 6) * 2);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetY = 1.5;
+    ctx.fillStyle = f.color;
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath(); ctx.arc(px - r * 0.3, py - r * 0.3, r * 0.3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function render() {
+    drawGrid();
+    fruits.forEach(drawFruit);
+    snakes.forEach(drawSnake);
+  }
+
+  function cellBlocked(x, y) {
+    if (x < 0 || x >= cols || y < 0 || y >= rows) return true;
+    for (const s of snakes) {
+      if (!s.alive) continue;
+      for (const seg of s.body) {
+        if (seg.x === x && seg.y === y) return true;
+      }
+    }
+    return false;
+  }
+
+  function buildBlockedSet(predictedHeads) {
+    const set = new Set();
+    snakes.forEach(s => {
+      if (!s.alive) return;
+      s.body.forEach(seg => set.add(seg.x + ',' + seg.y));
+    });
+    for (const id in predictedHeads) {
+      const h = predictedHeads[id];
+      set.add(h.x + ',' + h.y);
+    }
+    return set;
+  }
+
+  function floodFillCount(x, y, blockedSet, cap) {
+    if (x < 0 || x >= cols || y < 0 || y >= rows) return 0;
+    const startKey = x + ',' + y;
+    if (blockedSet.has(startKey)) return 0;
+    const visited = new Set([startKey]);
+    const queue = [{ x, y }];
+    let count = 0;
+    while (queue.length && count < cap) {
+      const cur = queue.shift();
+      count++;
+      const neighbors = [
+        { x: cur.x + 1, y: cur.y }, { x: cur.x - 1, y: cur.y },
+        { x: cur.x, y: cur.y + 1 }, { x: cur.x, y: cur.y - 1 }
+      ];
+      for (const n of neighbors) {
+        if (n.x < 0 || n.x >= cols || n.y < 0 || n.y >= rows) continue;
+        const key = n.x + ',' + n.y;
+        if (visited.has(key) || blockedSet.has(key)) continue;
+        visited.add(key);
+        queue.push(n);
+      }
+    }
+    return count;
+  }
+
+  function nearestFruit(head) {
+    let best = null, bestDist = Infinity;
+    fruits.forEach(f => {
+      const d = Math.abs(f.x - head.x) + Math.abs(f.y - head.y);
+      if (d < bestDist) { bestDist = d; best = f; }
+    });
+    return best;
+  }
+
+  function chooseAiDir(s, predictedHeads) {
+    const head = s.body[0];
+    const allDirs = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+    const options = allDirs.filter(d => !(d.x === -s.dir.x && d.y === -s.dir.y));
+
+    const blockedSet = buildBlockedSet(predictedHeads);
+    const target = nearestFruit(head);
+    const cap = Math.min(cols * rows, Math.max(30, s.body.length * 3));
+
+    const scored = options.map(d => {
+      const nx = head.x + d.x, ny = head.y + d.y;
+      const inBounds = nx >= 0 && nx < cols && ny >= 0 && ny < rows;
+      const key = nx + ',' + ny;
+      const blocked = !inBounds || blockedSet.has(key);
+      const space = blocked ? 0 : floodFillCount(nx, ny, blockedSet, cap);
+      const distToFruit = target ? Math.abs(nx - target.x) + Math.abs(ny - target.y) : 0;
+      return { d, blocked, space, distToFruit };
+    });
+
+    // Prefer moves that land in open space at least as large as the snake itself,
+    // so the AI doesn't wander into pockets it can't escape.
+    let pool = scored.filter(o => !o.blocked && o.space >= Math.min(s.body.length, cap));
+    if (!pool.length) pool = scored.filter(o => !o.blocked);
+    if (!pool.length) pool = scored;
+
+    pool.sort((a, b) => {
+      if (a.space !== b.space) return b.space - a.space;
+      return a.distToFruit - b.distToFruit;
+    });
+
+    const topSpace = pool[0].space;
+    const contenders = pool.filter(o => o.space === topSpace && o.distToFruit <= pool[0].distToFruit + 2);
+    if (contenders.length > 1 && Math.random() < 0.15) {
+      return contenders[Math.floor(Math.random() * contenders.length)].d;
+    }
+    return pool[0].d;
+  }
+
+  function step() {
+    if (paused) return;
+    tickCount++;
+
+    const predictedHeads = {};
+    snakes.forEach(s => {
+      if (!s.alive) return;
+      if (!s.ai) {
+        predictedHeads[s.id] = { x: s.body[0].x + s.nextDir.x, y: s.body[0].y + s.nextDir.y };
+      }
+    });
+    snakes.forEach(s => {
+      if (!s.alive) return;
+      if (s.ai) {
+        s.nextDir = chooseAiDir(s, predictedHeads);
+        predictedHeads[s.id] = { x: s.body[0].x + s.nextDir.x, y: s.body[0].y + s.nextDir.y };
+      }
+      s.dir = s.nextDir;
+    });
+
+    const newHeads = {};
+    snakes.forEach(s => {
+      if (!s.alive) return;
+      newHeads[s.id] = { x: s.body[0].x + s.dir.x, y: s.body[0].y + s.dir.y };
+    });
+
+    const eatenFruitIds = new Set();
+    const dying = [];
+
+    snakes.forEach(s => {
+      if (!s.alive) return;
+      const head = newHeads[s.id];
+
+      if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+        dying.push(s.id);
+        return;
+      }
+
+      for (const other of snakes) {
+        if (!other.alive) continue;
+        for (let i = 0; i < other.body.length; i++) {
+          if (other.id === s.id && i === 0) continue;
+          if (other.body[i].x === head.x && other.body[i].y === head.y) {
+            dying.push(s.id);
+            return;
+          }
+        }
+      }
+
+      for (const otherId in newHeads) {
+        if (Number(otherId) === s.id) continue;
+        const oh = newHeads[otherId];
+        if (oh.x === head.x && oh.y === head.y) {
+          dying.push(s.id);
+          return;
+        }
+      }
+    });
+
+    const dyingSet = new Set(dying);
+
+    snakes.forEach(s => {
+      if (!s.alive || dyingSet.has(s.id)) return;
+      const head = newHeads[s.id];
+      s.body.unshift(head);
+
+      let ateIdx = -1;
+      for (let i = 0; i < fruits.length; i++) {
+        if (fruits[i].x === head.x && fruits[i].y === head.y && !eatenFruitIds.has(fruits[i].id)) {
+          ateIdx = i;
+          break;
+        }
+      }
+      if (ateIdx >= 0) {
+        eatenFruitIds.add(fruits[ateIdx].id);
+        if (s.isPlayer) {
+          speed = Math.max(60, baseSpeed - Math.floor(s.body.length * 2));
+          clearInterval(timer);
+          timer = setInterval(step, speed);
+        }
+      } else {
+        s.body.pop();
+      }
+    });
+
+    if (eatenFruitIds.size) {
+      fruits = fruits.filter(f => !eatenFruitIds.has(f.id));
+    }
+
+    dyingSet.forEach(id => {
+      const s = snakes.find(sn => sn.id === id);
+      if (s && s.alive) {
+        s.alive = false;
+        scatterFruitFromBody(s.body);
+      }
+    });
+
+    if (fruits.length < 3) spawnFruit(2);
+
+    updateRoster();
+    const player = snakes[0];
+    scoreEl.textContent = player.alive ? player.body.length : player.body.length;
+
+    render();
+
+    const alive = snakes.filter(s => s.alive);
+
+    if (!player.alive) {
+      endBattle(false);
+      return;
+    }
+    if (alive.length === 1 && alive[0].isPlayer) {
+      endBattle(true);
+      return;
+    }
+    if (alive.length === 0) {
+      endBattle(false);
+      return;
+    }
+  }
+
+  function updateMatchClockDisplay(ms) {
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    timeLeftEl.textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+
+  function startMatchClock() {
+    matchEndAt = Date.now() + MATCH_DURATION_MS;
+    pausedAt = 0;
+    updateMatchClockDisplay(MATCH_DURATION_MS);
+    clearInterval(matchClock);
+    matchClock = setInterval(() => {
+      if (paused) return;
+      const remaining = matchEndAt - Date.now();
+      if (remaining <= 0) {
+        updateMatchClockDisplay(0);
+        clearInterval(matchClock);
+        if (running) endBattle(false, true);
+      } else {
+        updateMatchClockDisplay(remaining);
+      }
+    }, 250);
+  }
+
+  function endBattle(playerWon, timeUp) {
+    running = false;
+    clearInterval(timer);
+    clearInterval(matchClock);
+
+    const ranked = [...snakes].sort((a, b) => {
+      if (a.alive !== b.alive) return a.alive ? -1 : 1;
+      return b.body.length - a.body.length;
+    });
+
+    resultsList.innerHTML = '';
+    ranked.forEach((s, i) => {
+      const row = document.createElement('div');
+      const left = document.createElement('span');
+      const dot = document.createElement('span');
+      dot.className = 'rdot';
+      dot.style.background = s.palette.head;
+      left.appendChild(dot);
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = (i + 1) + '. ' + (s.isPlayer ? 'You' : s.label) + (s.alive ? ' (alive)' : '');
+      left.appendChild(nameSpan);
+      row.appendChild(left);
+      const right = document.createElement('span');
+      right.textContent = s.body.length;
+      row.appendChild(right);
+      resultsList.appendChild(row);
+    });
+
+    if (timeUp) {
+      const leader = ranked.find(s => s.alive) || ranked[0];
+      goTitle.textContent = "Time's Up!";
+      goDetail.textContent = leader.isPlayer
+        ? 'You held the longest snake when the bell rang.'
+        : leader.label + ' held the longest snake when the bell rang.';
+    } else if (playerWon) {
+      goTitle.textContent = 'Victory!';
+      goDetail.textContent = 'You outlasted every other snake.';
+    } else {
+      goTitle.textContent = 'Withered';
+      const player = snakes[0];
+      goDetail.textContent = 'Final length: ' + player.body.length;
+    }
+    gameOverOverlay.classList.add('show');
+  }
+
+  function startGame() {
+    startOverlay.classList.remove('show');
+    gameOverOverlay.classList.remove('show');
+    pauseBadge.classList.remove('show');
+    resetState();
+    render();
+    running = false;
+    clearInterval(timer);
+    clearInterval(matchClock);
+    updateMatchClockDisplay(MATCH_DURATION_MS);
+    runCountdown(3);
+  }
+
+  function runCountdown(n) {
+    countdownOverlay.classList.add('show');
+    countdownNum.textContent = n;
+    countdownNum.style.animation = 'none';
+    void countdownNum.offsetWidth;
+    countdownNum.style.animation = '';
+    if (n > 0) {
+      setTimeout(() => runCountdown(n - 1), 700);
+    } else {
+      countdownOverlay.classList.remove('show');
+      running = true;
+      clearInterval(timer);
+      timer = setInterval(step, speed);
+      startMatchClock();
+    }
+  }
+
+  function setDir(x, y) {
+    if (!running || paused) return;
+    const s = snakes[0];
+    if (!s.alive) return;
+    if (s.dir.x === -x && s.dir.y === -y) return;
+    if (s.dir.x === x && s.dir.y === y) return;
+    s.nextDir = { x, y };
+  }
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+    pauseBadge.classList.toggle('show', paused);
+    if (paused) {
+      pausedAt = Date.now();
+    } else if (pausedAt) {
+      matchEndAt += Date.now() - pausedAt;
+      pausedAt = 0;
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowUp': case 'w': case 'W': setDir(0, -1); e.preventDefault(); break;
+      case 'ArrowDown': case 's': case 'S': setDir(0, 1); e.preventDefault(); break;
+      case 'ArrowLeft': case 'a': case 'A': setDir(-1, 0); e.preventDefault(); break;
+      case 'ArrowRight': case 'd': case 'D': setDir(1, 0); e.preventDefault(); break;
+      case ' ': togglePause(); e.preventDefault(); break;
+    }
+  });
+
+  document.getElementById('up').addEventListener('click', () => setDir(0, -1));
+  document.getElementById('down').addEventListener('click', () => setDir(0, 1));
+  document.getElementById('left').addEventListener('click', () => setDir(-1, 0));
+  document.getElementById('right').addEventListener('click', () => setDir(1, 0));
+
+  let touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    touchStartX = t.clientX; touchStartY = t.clientY;
+  }, { passive: true });
+  canvas.addEventListener('touchend', (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (Math.abs(dx) > 20) setDir(dx > 0 ? 1 : -1, 0);
+    } else {
+      if (Math.abs(dy) > 20) setDir(0, dy > 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  resetState();
+  render();
+  startOverlay.classList.add('show');
+})();
+</script>
+</body>
+</html>
